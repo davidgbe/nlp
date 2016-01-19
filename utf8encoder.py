@@ -75,7 +75,6 @@ def handle_int(int_val, num):
   for b in bytes:
     write_val(b)
 
-
 def run(target_file):
   open_file = open(file_name, 'rb')
   try:
@@ -92,13 +91,3 @@ def run(target_file):
 
 run(file_name)
 print 'done'
-
-# encoded_file = io.open(file_name,'r', encoding='utf-16-be')
-
-# try:
-#   string = encoded_file.read(1)
-#   while string != '':
-#     print string
-#     string = encoded_file.read(1)
-# finally: 
-#   encoded_file.close()
