@@ -1,9 +1,7 @@
 #!/usr/bin/python
 
 import sys
-import io
 import struct
-import bitstring
 
 trunc_args = sys.argv[1:]
 file_name = trunc_args[0]
