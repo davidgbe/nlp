@@ -16,10 +16,12 @@ def run(args):
   if len(args) != 1:
     print 'You must provide only one argument'
   else:
+    output_file = open('anagram_out.txt', 'w')
     anagrams = []
     add_letter('', args[0], anagrams)
     anagrams = sorted(anagrams)
     for word in anagrams:
-      print word
+      output_file.write(word)
+    output_file.close()
 
 run(trunc_args)

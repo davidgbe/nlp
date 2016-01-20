@@ -5,7 +5,7 @@ import struct
 
 trunc_args = sys.argv[1:]
 file_name = trunc_args[0]
-output_file = open('output.txt', 'wb')
+output_file = open('utf8encoder_out.txt', 'wb')
 
 def read_two_bytes(fin):
   c = fin.read(2)
@@ -86,6 +86,6 @@ def run(target_file):
       two_bytes = read_two_bytes(open_file)
   finally:
     open_file.close()
+    output_file.close()
 
 run(file_name)
-print 'done'
