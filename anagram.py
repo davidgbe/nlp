@@ -21,7 +21,7 @@ def run(args):
     add_letter('', args[0], anagrams)
     anagrams = sorted(anagrams)
     for word in anagrams:
-      output_file.write(word)
+      output_file.write(word + '\n')
     output_file.close()
 
 run(trunc_args)
