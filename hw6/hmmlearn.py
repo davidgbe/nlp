@@ -1,3 +1,7 @@
 from lib.hmm import HiddenMarkovModel
+import sys
 
-hmm = HiddenMarkovModel('hw6-dev-train/catalan_corpus_train_tagged.txt')
+if len(sys.argv) != 2:
+  sys.exit('Must provide a path for data')
+
+hmm = HiddenMarkovModel(sys.argv[1])
