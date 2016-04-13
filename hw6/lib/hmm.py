@@ -3,6 +3,7 @@ from math import log
 import pickle
 import numpy as np
 from scipy.sparse import csr_matrix
+import time
 
 class HiddenMarkovModel(object):
   def __init__(self, data_path=None, load=False):
@@ -25,6 +26,7 @@ class HiddenMarkovModel(object):
 
     for line in open(os.path.join(os.path.dirname(__file__), '..', data_path)):
       split_line = line.split(' ')
+      split_line[-1] = split_line[-1].replace('\n', '')
       split_line = map(lambda x: x.lower(), split_line)
       for i in range(len(split_line)):
         split_line[i] = split_line[i].split('/')
@@ -109,7 +111,10 @@ class HiddenMarkovModel(object):
       tagged = self.predict_sentence(split_line_lower)
       newline = ''
       for i in range(len(split_line)):
-        newline += (split_line[i] + '/' + tagged[i+1].upper() + ' ' if (i != len(split_line) - 1) else '\n')
+        if (i != len(split_line) - 1):
+          newline += (split_line[i] + '/' + tagged[i+1].upper() + ' ')
+        else:
+          newline += (split_line[i].replace('\n', '') + '/' + tagged[i+1].upper())
       output.write(newline)
       count += 1
       if count % 50 == 0:
@@ -117,18 +122,20 @@ class HiddenMarkovModel(object):
     output.close()
 
   def predict_sentence(self, sentence):
+    emission_cache = {}
     paths = map(lambda s: ['start'], self.states)
     num_states = len(self.states)
     start = np.zeros((num_states, num_states))
     transition_matrix = self.create_transitions_matrix()
     next = start
+    sentence[-1] = sentence[-1].replace('\n', '')
     for word in sentence:
-      next = next + self.create_next_step_matrix(word, transition_matrix)
+      next = next + self.create_next_step_matrix(word, transition_matrix, emission_cache)
       max_indices = np.array(np.argmax(next, axis=0))[0]
       for i in range(len(paths)):
         paths[i].append(self.states[max_indices[i]])
       maxes = np.amax(next, axis=0)
-      next = np.diag(maxes)
+      next = np.tile(maxes, (len(self.states), 1))
     m = np.argmax(next) % num_states
     return paths[m]
 
@@ -151,9 +158,14 @@ class HiddenMarkovModel(object):
     sparse_mat = csr_matrix(transitions)
     return sparse_mat
 
-  def create_next_step_matrix(self, next_word, transition_matrix):
-    emissions = map(lambda s: self.fetch_emission_prob(s, next_word), self.states)
-    emissions_mat = np.tile(emissions, (len(self.states), 1)).transpose()
+  def create_next_step_matrix(self, next_word, transition_matrix, emission_cache):
+    emissions_mat = None
+    if next_word in emission_cache:
+      emissions_mat = emission_cache[next_word]
+    else:
+      emissions = map(lambda s: self.fetch_emission_prob(s, next_word), self.states)
+      emissions_mat = np.tile(emissions, (len(self.states), 1)).transpose()
+      emission_cache[next_word] = emissions_mat
     return emissions_mat + transition_matrix
 
   def save(self):
