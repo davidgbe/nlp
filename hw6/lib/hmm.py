@@ -72,7 +72,7 @@ class HiddenMarkovModel(object):
 
   def build_state_distribution(self):
     for state in self.state_occurences:
-      self.state_occurences[state] = np.log(float(self.state_occurences[state]) / self.total_state_occurences)
+      self.state_occurences[state] = float(self.state_occurences[state]) / self.total_state_occurences
       self.states.append(state)
     self.state_distribution = self.state_occurences
 
@@ -89,7 +89,7 @@ class HiddenMarkovModel(object):
         total_exiting_state += exiting_state
         self.transition_counts[prev_state][state] = exiting_state
       for state in self.states:
-        self.transition_counts[prev_state][state] = np.log(float(self.transition_counts[prev_state][state]) / total_exiting_state)
+        self.transition_counts[prev_state][state] = float(self.transition_counts[prev_state][state]) / total_exiting_state
     self.transition_probs = self.transition_counts
 
   def build_emission_probs(self):
@@ -98,7 +98,7 @@ class HiddenMarkovModel(object):
       for word in self.emission_counts[state]:
         total_num_emissions += self.emission_counts[state][word]
       for word in self.emission_counts[state]:
-        self.emission_counts[state][word] = np.log(float(self.emission_counts[state][word]) / total_num_emissions)
+        self.emission_counts[state][word] = float(self.emission_counts[state][word]) / total_num_emissions
     self.emission_probs = self.emission_counts
 
   def predict(self, input_path):
@@ -130,43 +130,28 @@ class HiddenMarkovModel(object):
     next = start
     sentence[-1] = sentence[-1].replace('\n', '')
     for word in sentence:
-      next = next + self.create_next_step_matrix(word, transition_matrix, emission_cache)
-      max_indices = np.array(np.argmax(next, axis=0))[0]
-      for i in range(len(paths)):
-        paths[i].append(self.states[max_indices[i]])
-      maxes = np.amax(next, axis=0)
-      next = np.tile(maxes, (len(self.states), 1))
-    m = np.argmax(next) % num_states
-    return paths[m]
-
-  def fetch_emission_prob(self, state, word):
-    if state == 'start':
-      return -100
-    if word in self.emission_probs[state]:
-      return self.emission_probs[state][word]
-    else:
-      return -100
-
-  def create_transitions_matrix(self):
-    transitions = []
-    num_states = len(self.states)
-    for state in self.states:
-      row = []
-      transitions.append(row)
-      for prev_state in self.states:
-        row.append(self.transition_probs[prev_state][state])
-    sparse_mat = csr_matrix(transitions)
-    return sparse_mat
-
-  def create_next_step_matrix(self, next_word, transition_matrix, emission_cache):
-    emissions_mat = None
-    if next_word in emission_cache:
-      emissions_mat = emission_cache[next_word]
-    else:
-      emissions = map(lambda s: self.fetch_emission_prob(s, next_word), self.states)
-      emissions_mat = np.tile(emissions, (len(self.states), 1)).transpose()
-      emission_cache[next_word] = emissions_mat
-    return emissions_mat + transition_matrix
+      highest_for_new_state = {}
+      for prev_state in self.paths:
+        for state in self.states:
+          if not word in self.emission_probs[state]:
+            continue
+          step_prob = self.emission_probs[state] * self.transition_probs[prev_state][state]
+          if not state in highest_for_new_state:
+            highest_for_new_state[state] = (step_prob, prev_state)
+          elif step_prob > highest_for_new_state[state][1]:
+            highest_for_new_state[state] = (step_prob, prev_state)
+      for state in highest_for_new_state:
+        prob, prev_state = highest_for_new_state[state]
+        new_path = paths[prev_state]['path']
+        new_path.append(state)
+        new_prob = prob * paths[prev_state]['prob']
+        highest_for_new_state = { 'path': new_path, 'prob': new_path }
+    max_ending = -1
+    max_val = -100000000.0
+    for path in paths:
+      if paths[path]['prob'] > max_val:
+        max_ending = path
+    return paths[max_ending]['path']
 
   def save(self):
     hmm_model_file = open('hmm_model.txt', 'wb')
