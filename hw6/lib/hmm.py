@@ -102,31 +102,31 @@ class HiddenMarkovModel(object):
     self.emission_probs = self.emission_counts
 
   def predict(self, input_path):
+    emission_cache = {}
+    transition_matrix = self.create_transitions_matrix()
     base_path = os.path.dirname(__file__)
     output = open(os.path.join(base_path, '..', 'hmmoutput.txt'), 'w')
     count = 0
     for line in open(os.path.join(os.path.dirname(__file__), '..', input_path)):
       split_line = line.split(' ')
       split_line_lower = map(lambda x: x.lower(), split_line)
-      tagged = self.predict_sentence(split_line_lower)
+      tagged = self.predict_sentence(split_line_lower, emission_cache, transition_matrix)
       newline = ''
       for i in range(len(split_line)):
         if (i != len(split_line) - 1):
           newline += (split_line[i] + '/' + tagged[i+1].upper() + ' ')
         else:
-          newline += (split_line[i].replace('\n', '') + '/' + tagged[i+1].upper())
+          newline += (split_line[i].replace('\n', '') + '/' + tagged[i+1].upper() + '\n')
       output.write(newline)
       count += 1
       if count % 50 == 0:
         print count
     output.close()
 
-  def predict_sentence(self, sentence):
-    emission_cache = {}
+  def predict_sentence(self, sentence, emission_cache, transition_matrix):
     paths = map(lambda s: ['start'], self.states)
     num_states = len(self.states)
     start = np.zeros((num_states, num_states))
-    transition_matrix = self.create_transitions_matrix()
     next = start
     sentence[-1] = sentence[-1].replace('\n', '')
     for word in sentence:
