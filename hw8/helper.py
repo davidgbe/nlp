@@ -6,10 +6,14 @@ class Bleu(object):
         pass
 
     def clean(self, sen):
-        s_low = sen.lower()
-        if s_low[-1] == '.':
-            s_low = s_low[:-1]
-        return s_low.split()
+        s_low = sen.lower().split()
+        if len(s_low) and len(s_low[-1]) and s_low[-1][-1] == '.':
+            if len(s_low[-1]) == 1:
+                s_low = s_low[:-1]
+            else:
+                s_low[-1] = s_low[-1][:-1]
+        #s_low = filter(lambda s: s != ',', s_low)
+        return s_low
 
     def clean_file(self, open_file):
         return map(lambda l: self.clean(l), open_file)
@@ -58,7 +62,13 @@ class Bleu(object):
         total = 0
         matches = 0
         for (trans, actual) in zip(trans_corpus, actual_corpus):
-            total += (len(trans) + 1 - n) if len(trans) >= n else 0
+            possible_matches = ((len(trans) + 1 - n) if len(trans) >= n else 0)
+            print n 
+            print self.calc_sentence_n_gram_matches(n, trans, actual)
+            print possible_matches
+            print trans
+            print actual
+            total += possible_matches
             matches += self.calc_sentence_n_gram_matches(n, trans, actual)
         return float(matches) / total
 
@@ -86,7 +96,7 @@ class Bleu(object):
             return math.exp(1.0 - float(trans_length) / actual_length)
 
     def calc_bleu(self, trans_corpus, actual_corpus):
-        return self.calc_brevity_penalty(trans_corpus, actual_corpus) * self.calc_weighted_n_gram_sum(5, trans_corpus, actual_corpus)
+        return self.calc_brevity_penalty(trans_corpus, actual_corpus) * self.calc_weighted_n_gram_sum(4, trans_corpus, actual_corpus)
 
     def load_file(self, path):
         return open(os.path.join(os.path.dirname(__file__), path), 'r')
