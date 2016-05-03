@@ -1,4 +1,5 @@
 import sys
+import os
 from helper import Bleu
 
 if len(sys.argv) != 3:
@@ -6,4 +7,8 @@ if len(sys.argv) != 3:
 
 b = Bleu()
 
-print b.evaluate(sys.argv[1], sys.argv[2])
+out = open(os.path.join(os.path.dirname(__file__), './bleu_out.txt'), 'w')
+val = b.evaluate(sys.argv[1], sys.argv[2])
+print val
+out.write(str(val))
+out.close()
